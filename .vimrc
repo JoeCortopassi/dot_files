@@ -19,7 +19,7 @@ let g:ctrlp_working_path_mode = 'c'
 set t_Co=256
 set nowrap
 set backspace=2
-set expandtab tabstop=4 shiftwidth=4 smarttab softtabstop=4
+set expandtab tabstop=2 shiftwidth=2 smarttab softtabstop=2
 set directory=$HOME/.vim/swapfiles//
 "autocmd BufNewFile,BufRead *.js set spell
 let g:ctrlp_custom_ignore = 'bower_components\|node_modules\|DS_Store\'
@@ -27,6 +27,7 @@ let g:ctrlp_custom_ignore = 'bower_components\|node_modules\|DS_Store\'
 call plug#begin("~/.nvim/plugged")
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
 "Plug 'Valloric/YouCompleteMe'
+Plug 'godlygeek/tabular'
 Plug 'mkitt/tabline.vim'
 Plug 'fatih/vim-go'
 Plug 'kien/ctrlp.vim'
@@ -39,6 +40,10 @@ Plug 'pangloss/vim-javascript'
 Plug 'keith/swift'
 Plug 'groenewege/vim-less'
 Plug 'mhinz/vim-signify'
+Plug 'leafgarland/typescript-vim'
+Plug 'peitalin/vim-jsx-typescript'
+Plug 'maxmellon/vim-jsx-pretty'
+Plug 'styled-components/vim-styled-components', { 'branch': 'main' }
 "Plug 'ternjs/tern_for_vim', { 'do': 'npm install' }
 Plug 'morhetz/gruvbox'
 Plug 'flowtype/vim-flow'
@@ -73,6 +78,8 @@ nmap <silent> gr <Plug>(coc-references)
 nmap tt :ALEToggleBuffer<CR>
 nmap 22 :noh<CR>
 nmap <silent> g9 :lw<CR>:set wrap<CR>
+autocmd FileType javascript hi CocFloating ctermbg=black ctermfg=white
+autocmd FileType typescript hi CocFloating ctermbg=black ctermfg=white
 
 " Use tab for trigger completion with characters ahead and navigate.
 " NOTE: Use command ':verbose imap <tab>' to make sure tab is not mapped by
