@@ -26,7 +26,7 @@ let g:ctrlp_custom_ignore = 'bower_components\|node_modules\|DS_Store\'
 
 call plug#begin("~/.nvim/plugged")
 Plug 'neoclide/coc.nvim', {'branch': 'release'}
-"Plug 'Valloric/YouCompleteMe'
+"Plug 'Valloric/YouCompleteMe' "test
 Plug 'godlygeek/tabular'
 Plug 'mkitt/tabline.vim'
 Plug 'fatih/vim-go'
