@@ -2,57 +2,71 @@
 local fn = vim.fn
 local install_path = fn.stdpath('data')..'/site/pack/packer/start/packer.nvim'
 if fn.empty(fn.glob(install_path)) > 0 then
-  PACKER_BOOTSTRAP = fn.system({'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim', install_path})
-  print 'Installing packer close and reopen Neovim...'
-  vim.cmd [[packadd packer.nvim]]
+  PACKER_BOOTSTRAP = fn.system({'git', 'clone', '--depth', '1', 'https://github.com/wbthomason/packer.nvim', install_path})
+  print 'Installing packer close and reopen Neovim...'
+  vim.cmd [[packadd packer.nvim]]
 end
 
 local packer = require('packer')
 
 packer.startup(function(use)
-  -- Packer can manage itself
-  use 'wbthomason/packer.nvim'
+  -- Packer can manage itself
+  -- TODO: Pin this! Run `git -C <install_path> rev-parse HEAD`
+  use {'wbthomason/packer.nvim', commit = '...'}
 
-  -- LSP Support
-  use {'williamboman/mason.nvim'}
-  use {'williamboman/mason-lspconfig.nvim'}
-  use {'neovim/nvim-lspconfig'}
-  use {
-    'hrsh7th/nvim-cmp',
-    requires = {
-      {'hrsh7th/cmp-nvim-lsp'},
-      {'saadparwaiz1/cmp_luasnip'},
-      {'L3MON4D3/LuaSnip'},
-      {'hrsh7th/cmp-buffer'}, -- buffer completions
-      {'hrsh7th/cmp-path'}, -- path completions
-      {'hrsh7th/cmp-cmdline'}, -- cmdline completions
-    }
-  }
+  -- Colorscheme (Treesitter-aware)
+  use {
+    'catppuccin/nvim',
+    as = 'catppuccin',
+    commit = '...' -- TODO: Pin this
+  }
 
-  -- Telescope (Ctrl+p fuzzy finder)
-  use {'nvim-telescope/telescope.nvim', requires = { {'nvim-lua/plenary.nvim'} }}
-  use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make' } -- improve telescope performance
+  -- LSP Support
+  -- TODO: Pin all plugins below!
+  use {'williamboman/mason.nvim', commit = '...'}
+  use {'williamboman/mason-lspconfig.nvim', commit = '...'}
+  use {'neovim/nvim-lspconfig', commit = '...'}
+  use {
+    'hrsh7th/nvim-cmp',
+    commit = '...',
+    requires = {
+      {'hrsh7th/cmp-nvim-lsp', commit = '...'},
+      {'saadparwaiz1/cmp_luasnip', commit = '...'},
+      {'L3MON4D3/LuaSnip', commit = '...'},
+      {'hrsh7th/cmp-buffer', commit = '...'},
+      {'hrsh7th/cmp-path', commit = '...'},
+      {'hrsh7th/cmp-cmdline', commit = '...'},
+    }
+  }
 
-  -- Treesitter (Improved syntax highlighting)
-  use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate'}
+  -- Telescope (Ctrl+p fuzzy finder)
+  use {'nvim-telescope/telescope.nvim', commit = '...', requires = { {'nvim-lua/plenary.nvim', commit = '...'} }}
+  -- Pinning this is critical as it secures the `run = 'make'` hook
+  use {'nvim-telescope/telescope-fzf-native.nvim', run = 'make', commit = '...'} 
 
-  -- Prettier
-  --use 'prettier/vim-prettier'
+  -- Treesitter (Improved syntax highlighting)
+  -- Pinning this is critical as it secures the `run = ':TSUpdate'` hook
+  use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate', commit = '...'}
 
-  -- Add gopls
-  use {'golang/tools', run = 'go install golang.org/x/tools/gopls@latest'}
+  -- Prettier
+  --use 'prettier/vim-prettier'
+
+  -- Add gopls
+  -- NOTE: This is redundant. Mason (below) is already installing 'gopls'.
+  -- use {'golang/tools', run = 'go install golang.org/x/tools/gopls@latest'}
 
   -- ========== Ruby/Rails Additions ==========
-  use 'tpope/vim-rails' -- Key Rails plugin for navigation, commands
-  use 'vim-ruby/vim-ruby' -- Improved Ruby syntax, indentation
-  use 'tpope/vim-endwise' -- Automatically adds 'end'
-  use 'tpope/vim-commentary' -- Useful commenting (gcc)
+  -- TODO: Pin all plugins below!
+  use {'tpope/vim-rails', commit = '...'}
+  use {'vim-ruby/vim-ruby', commit = '...'}
+  use {'tpope/vim-endwise', commit = '...'}
+  use {'tpope/vim-commentary', commit = '...'}
   -- ==========================================
 
-  -- Automatically set up your configuration after cloning packer.nvim
-  if PACKER_BOOTSTRAP then
-    require('packer').sync()
-  end
+  -- Automatically set up your configuration after cloning packer.nvim
+  if PACKER_BOOTSTRAP then
+    require('packer').sync()
+  end
 end)
 
 -- Set tab options
@@ -65,15 +79,22 @@ vim.opt.autoindent = true
 vim.opt.number = true
 vim.opt.cursorline = true
 
+-- Enable the colorscheme
+-- This must go *after* packer setup but *before* other plugin configs
+vim.cmd [[colorscheme catppuccin]]
+
 -- LSP Configuration
 require("mason").setup()
 require("mason-lspconfig").setup({
-  ensure_installed = { 
+  ensure_installed = { 
     "ts_ls", 
     "gopls",
-    "solargraph" -- Add Ruby LSP
+    "solargraph", -- Ruby LSP
+    "ruby_lsp"    -- Newer Ruby LSP
   },
-  automatic_installation = true,
+  -- SAFER: Disabled automatic installation.
+  -- You must now run :MasonInstallAll or :MasonInstall <lsp> manually.
+  automatic_installation = false,
 })
 
 local lspconfig = require("lspconfig")
@@ -85,90 +106,83 @@ lspconfig.ts_ls.setup { capabilities = capabilities }
 lspconfig.gopls.setup { capabilities = capabilities }
 -- Use solargraph (Ruby)
 lspconfig.solargraph.setup { capabilities = capabilities }
+-- Use ruby-lsp (Newer Ruby LSP)
+lspconfig.ruby_lsp.setup { capabilities = capabilities }
 
 
 -- Telescope Configuration
 require('telescope').setup{
-  defaults = {
-    file_ignore_patterns = { "node_modules", "vendor" }, -- Added vendor for Rails
-    mappings = {
-      i = {
-        ['<C-u>'] = false,
-        ['<C-d>'] = false,
-      },
-    },
-  },
+  defaults = {
+    file_ignore_patterns = { "node_modules", "vendor" }, -- Added vendor for Rails
+    mappings = {
+      i = {
+        ['<C-u>'] = false,
+        ['<C-d>'] = false,
+      },
+    },
+  },
 }
 -- map ctrl+p
 vim.keymap.set('n', '<C-p>', '<cmd>Telescope find_files<cr>')
 
 -- Treesitter Configuration
 require'nvim-treesitter.configs'.setup {
-  ensure_installed = {
+  ensure_installed = {
     "javascript", 
     "typescript", 
     "tsx", 
     "go", 
     "lua",
     "vim",
-    "ruby", -- Add ruby parser
-    "erb"   -- Add erb parser
+    -- === Ruby/Rails Additions ===
+    "ruby",
+    "embedded_template", -- For ERB
+    "yaml",              -- For config/database.yml, etc.
+    "json",
+    "css",
+    "scss",              -- For assets
+    "bash",              -- For scripts
+    "sql",
+    -- ============================
+    "html",
   },
-  sync_install = false, -- install parsers asynchronously
-  auto_install = true, -- automatically install new parsers
-  highlight = {
-    enable = true,
-    additional_vim_regex_highlighting = false,
-  },
-  indent = { enable = true },
+  sync_install = false,
+  -- SAFER: Disabled automatic installation.
+  -- You must now run :TSInstall <parser> manually when needed.
+  auto_install = false, 
+  highlight = {
+    enable = true,
+    additional_vim_regex_highlighting = false,
+  },
+  indent = { enable = true },
 }
 
 -- Completion Configuration (nvim-cmp)
 local cmp = require('cmp')
 cmp.setup({
-  snippet = {
-    expand = function(args)
-      require('luasnip').lsp_expand(args.body)
-    end,
-  },
-  mapping = cmp.mapping.preset.insert({
-    ['<Tab>'] = cmp.mapping.select_next_item(),
-    ['<S-Tab>'] = cmp.mapping.select_prev_item(),
-    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-    ['<C-f>'] = cmp.mapping.scroll_docs(4),
-    ['<C-Space>'] = cmp.mapping.complete(),
-    ['<C-e>'] = cmp.mapping.close(),
-    ['<CR>'] = cmp.mapping.confirm { select = true },
-  }),
-  sources = cmp.config.sources({
-    { name = 'nvim_lsp' },
-  . { name = 'luasnip' },
-    { name = 'buffer' },
-    { name = 'path' },
-  }),
+  snippet = {
+    expand = function(args)
+      require('luasnip').lsp_expand(args.body)
+    end,
+  },
+  mapping = cmp.mapping.preset.insert({
+    ['<Tab>'] = cmp.mapping.select_next_item(),
+    ['<S-Tab>'] = cmp.mapping.select_prev_item(),
+    ['<C-b>'] = cmp.mapping.scroll_docs(-4),
+    ['<C-f>'] = cmp.mapping.scroll_docs(4),
+    ['<C-Space>'] = cmp.mapping.complete(),
+    ['<C-e>'] = cmp.mapping.close(),
+    ['<CR>'] = cmp.mapping.confirm { select = true },
+  }),
+  sources = cmp.config.sources({
+    { name = 'nvim_lsp' },
+    { name = 'luasnip' },
+    { name = 'buffer' },
+    { name = 'path' },
+  }),
 })
 
 -- Prettier Configuration
 -- vim.api.nvim_create_autocmd("BufWritePre", {
---   pattern = "*.{js,jsx,ts,tsx}",
---   callback = function()
---     vim.cmd("Prettier")
---   end,
--- })
-
--- vim-rails specific configuration
--- Add leader mappings for rails navigation
-vim.g.rails_leader = ','
-vim.keymap.set('n', '<leader>rc', '<cmd>Econtroller<cr>')
-vim.keymap.set('n', '<leader>rm', '<cmd>Emodel<cr>')
-vim.keymap.set('n', '<leader>rv', '<cmd>Eview<cr>')
-vim.keymap.set('n', '<leader>rf', '<cmd>Efixture<cr>')
-vim.keymap.set('n', '<leader>rt', '<cmd>Eunittest<cr>')
-vim.keymap.set('n', '<leader>ri', '<cmd>Eintegrationtest<cr>')
-vim.keymap.set('n', '<leader>rr', '<cmd>Rake<cr>')
-vim.keymap.set('n', '<leader>rg', '<cmd>Generate<cr>')
-
--- For vim-commentary (if you installed it)
--- Map leader-c to comment
-vim.keymap.set('n', '<leader>c', 'gcc')
-vim.keymap.set('v', '<leader>c', 'gc')
+--   pattern = "*.{js,jsx,ts,tsx}",
+--   callback
