@@ -15,11 +15,19 @@ packer.startup(function(use)
   use {'wbthomason/packer.nvim', commit = '...'}
 
   -- Colorscheme (Treesitter-aware)
+
+  -- Catppuccin
+  -- use {
+  --   'catppuccin/nvim',
+  --   as = 'catppuccin',
+  --   commit = '...' -- TODO: Pin this
+  -- }
+
   use {
-    'catppuccin/nvim',
-    as = 'catppuccin',
+    'miikanissi/modus-themes.nvim',
     commit = '...' -- TODO: Pin this
   }
+
 
   -- LSP Support
   -- TODO: Pin all plugins below!
@@ -74,14 +82,30 @@ vim.opt.tabstop = 2
 vim.opt.softtabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.expandtab = true
-vim.opt.smartindent = true
-vim.opt.autoindent = true
 vim.opt.number = true
 vim.opt.cursorline = true
+vim.opt.termguicolors = true
+vim.cmd("filetype plugin indent on")
 
 -- Enable the colorscheme
 -- This must go *after* packer setup but *before* other plugin configs
-vim.cmd [[colorscheme catppuccin]]
+-- Catppuccin Configuration
+-- require("catppuccin").setup({
+--     flavour = "mocha", -- latte, frappe, macchiato, mocha
+-- })
+-- vim.cmd [[colorscheme catppuccin]]
+-- Default options
+require("modus-themes").setup({
+	-- Theme comes in two styles `modus_operandi` and `modus_vivendi`
+	-- `auto` will automatically set style based on background set with vim.o.background
+	style = "auto",
+	variant = "tritanopia", -- Theme comes in four variants `default`, `tinted`, `deuteranopia`, and `tritanopia`
+	transparent = true, -- Transparent background (as supported by the terminal)
+  on_colors = function(colors)
+    colors.comment = "#656565" --colors.fg_dim
+  end,
+})
+vim.cmd [[colorscheme modus_vivendi]]
 
 -- LSP Configuration
 require("mason").setup()
@@ -89,7 +113,7 @@ require("mason-lspconfig").setup({
   ensure_installed = { 
     "ts_ls", 
     "gopls",
-    "solargraph", -- Ruby LSP
+    -- "solargraph", -- Ruby LSP
     "ruby_lsp"    -- Newer Ruby LSP
   },
   -- SAFER: Disabled automatic installation.
@@ -105,7 +129,7 @@ lspconfig.ts_ls.setup { capabilities = capabilities }
 -- Use gopls
 lspconfig.gopls.setup { capabilities = capabilities }
 -- Use solargraph (Ruby)
-lspconfig.solargraph.setup { capabilities = capabilities }
+--lspconfig.solargraph.setup { capabilities = capabilities }
 -- Use ruby-lsp (Newer Ruby LSP)
 lspconfig.ruby_lsp.setup { capabilities = capabilities }
 
@@ -154,7 +178,7 @@ require'nvim-treesitter.configs'.setup {
     enable = true,
     additional_vim_regex_highlighting = false,
   },
-  indent = { enable = true },
+  indent = { enable = false},
 }
 
 -- Completion Configuration (nvim-cmp)
