@@ -71,6 +71,8 @@ packer.startup(function(use)
   use {'tpope/vim-commentary', commit = '...'}
   -- ==========================================
 
+  use 'rafamadriz/friendly-snippets'
+
   -- Automatically set up your configuration after cloning packer.nvim
   if PACKER_BOOTSTRAP then
     require('packer').sync()
@@ -131,8 +133,50 @@ lspconfig.gopls.setup { capabilities = capabilities }
 -- Use solargraph (Ruby)
 --lspconfig.solargraph.setup { capabilities = capabilities }
 -- Use ruby-lsp (Newer Ruby LSP)
-lspconfig.ruby_lsp.setup { capabilities = capabilities }
+lspconfig.ruby_lsp.setup {
+  capabilities = capabilities,
+  cmd = { "ruby-lsp" }, -- Mason usually handles this, but explicit is safe
+  init_options = {
+    formatter = 'auto', -- Use Rubocop if available
+    enabledFeatures = {
+      "codeActions",
+      "diagnostics",
+      "documentHighlights",
+      "documentLink",
+      "documentSymbols",
+      "foldingRanges",
+      "formatting",
+      "hover",
+      "inlayHint",
+      "onTypeFormatting",
+      "selectionRanges",
+      "semanticHighlighting",
+      "completion", -- <--- Ensure this is on
+    },
+  },
+}
+-- === SNIPPET CONFIGURATION ===
+local luasnip = require("luasnip")
 
+-- 1. Load Snippets (The Standard Way)
+-- This searches your runtime path (rtp) for friendly-snippets automatically.
+-- It reads the package.json inside the plugin to determine which languages to load.
+require("luasnip.loaders.from_vscode").lazy_load()
+
+-- 2. Setup Filetype Extend
+-- Neovim recognizes .html.erb files as "eruby".
+-- We must tell LuaSnip: "When inside eruby, also load html and ruby snippets."
+luasnip.filetype_extend("eruby", { "erb", "html", "rails", "ruby" })
+
+-- Optional: Extend ruby to include rails snippets if not already present
+luasnip.filetype_extend("ruby", { "rails" })
+
+-- Debugging Info (Keep your custom command, it's useful!)
+-- You can verify this worked by running :SnipInfo inside an index.html.erb file.
+-- Debugging: Uncomment the line below to see if snippets file paths are found in :messages
+-- print("Snippets loaded")
+-- or run :SnipInfo
+-- =============================
 
 -- Telescope Configuration
 require('telescope').setup{
@@ -198,6 +242,18 @@ cmp.setup({
     ['<C-e>'] = cmp.mapping.close(),
     ['<CR>'] = cmp.mapping.confirm { select = true },
   }),
+  formatting = {
+    format = function(entry, vim_item)
+      -- Source
+      vim_item.menu = ({
+        nvim_lsp = "[LSP]",
+        luasnip = "[Snip]", -- Look for this label in your menu!
+        buffer = "[Buf]",
+        path = "[Path]",
+      })[entry.source.name]
+      return vim_item
+    end
+  },
   sources = cmp.config.sources({
     { name = 'nvim_lsp' },
     { name = 'luasnip' },
@@ -210,3 +266,39 @@ cmp.setup({
 -- vim.api.nvim_create_autocmd("BufWritePre", {
 --   pattern = "*.{js,jsx,ts,tsx}",
 --   callback
+
+-- Paste this at the bottom of init.lua
+vim.api.nvim_create_user_command("SnipInfo", function()
+  local ls = require("luasnip")
+  local ft = vim.bo.filetype
+  
+  print("--- LuaSnip Debug Info ---")
+  print("Current Buffer Filetype: '" .. ft .. "'")
+
+  -- We manually define the hierarchy we expect to see
+  -- (This helps confirm if your extend logic is matching what you expect)
+  local check_fts = { ft }
+  
+  -- If in eruby, we expect these to be checked
+  if ft == "eruby" then
+    check_fts = { "eruby", "rails", "html", "ruby", "erb" }
+  end
+
+  for _, f in ipairs(check_fts) do
+    local snippets = ls.get_snippets(f)
+    local count = 0
+    -- LuaSnip stores snippets in a specific table structure
+    if snippets then
+      -- Count normal snippets
+      count = count + (snippets[1] and #snippets[1] or 0)
+      -- Count autosnippets (optional, but good to know)
+      count = count + (snippets[2] and #snippets[2] or 0)
+    end
+    
+    if count > 0 then
+      print(string.format("✅ %-10s : %d snippets loaded", f, count))
+    else
+      print(string.format("❌ %-10s : 0 snippets loaded (Check lazy_load)", f))
+    end
+  end
+end, {})
