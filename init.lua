@@ -256,7 +256,7 @@ cmp.setup({
   },
   sources = cmp.config.sources({
     { name = 'nvim_lsp' },
-    { name = 'luasnip' },
+    -- { name = 'luasnip' }, -- this one line turns snippets ON or OFF
     { name = 'buffer' },
     { name = 'path' },
   }),
